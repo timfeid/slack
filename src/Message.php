@@ -2,11 +2,7 @@
 
 namespace TimFeid\Slack;
 
-use InvalidArgumentException;
-use ArrayAccess;
-use JsonSerializable;
-
-class Message implements ArrayAccess, JsonSerializable
+class Message extends Payloadable
 {
     /**
      * @var TimFeid\Slack\Client The slack client
@@ -88,9 +84,7 @@ class Message implements ArrayAccess, JsonSerializable
     {
         $this->client = $client;
 
-        foreach ($defaults as $key => $value) {
-            $this[$key] = $value;
-        }
+        parent::__construct($defaults);
     }
 
     /**
@@ -255,13 +249,15 @@ class Message implements ArrayAccess, JsonSerializable
         throw new InvalidArgumentException('Please supply an array of properties or an instance of '.Attachment::class);
     }
 
-    public function setAttachments(array $attachments)
+    public function setAttachments($attachments)
     {
         if (!isset($attachments[0])) {
             throw new InvalidArgumentException("Attachments must be an array");
         }
 
-        $this->attachments = $attachments;
+        foreach ($attachments as $attachment) {
+            $this->attach($attachment);
+        }
 
         return $this;
     }
@@ -274,86 +270,5 @@ class Message implements ArrayAccess, JsonSerializable
     public function getResponse()
     {
         return $this->response;
-    }
-
-    public function __set($key, $value)
-    {
-        $key = Str::camel($key);
-
-        if (!property_exists($this, $key)) {
-            throw new InvalidArgumentException("Unable to find key '{$key}'");
-        }
-
-        $this->$key = $value;
-    }
-
-    public function offsetExists($offset)
-    {
-        return property_exists($this, $offset) && !is_object($this->$offset);
-    }
-
-    public function offsetGet($offset)
-    {
-        $offset = Str::camel($offset);
-
-        return $this->$offset;
-    }
-
-    public function offsetSet($offset, $value)
-    {
-        if (is_object($this->$offset)) {
-            throw new InvalidArgumentException("Unable to set offset '{$offset}'");
-        }
-
-        if ($offset === 'icon') {
-            return $this->setIcon($value);
-        }
-
-        if ($offset === 'attachments') {
-            $this->setAttachments($value);
-        }
-
-        $this->$offset = $value;
-    }
-
-    public function offsetUnset($offset)
-    {
-        $this->$offset = '';
-    }
-
-    public function jsonSerialize()
-    {
-        return $this->toArray();
-    }
-
-    public function toArray()
-    {
-        $array = [];
-        foreach (get_class_vars(static::class) as $key => $default) {
-            if (!is_object($this[$key]) && $key !== 'icon') {
-                $array[Str::snake($key)] = $this->convertAllArrays($this[$key]);
-            }
-        }
-
-        return array_filter($array);
-    }
-
-    public function toJson(int $options = 0)
-    {
-        return json_encode($this->jsonSerialize(), $options);
-    }
-
-    protected function convertAllArrays($from)
-    {
-        if (is_array($from)) {
-            foreach ($from as $key => $value) {
-                // TODO: Make contract to make sure it has toArray method
-                if ($value instanceof ArrayAccess) {
-                    $from[$key] = $value->toArray();
-                }
-            }
-        }
-
-        return $from;
     }
 }

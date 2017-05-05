@@ -3,10 +3,8 @@
 namespace TimFeid\Slack;
 
 use InvalidArgumentException;
-use ArrayAccess;
-use JsonSerializable;
 
-class Attachment implements ArrayAccess, JsonSerializable
+class Attachment extends Payloadable
 {
     /**
      * The fallback text to use for clients that don't support attachments.
@@ -129,67 +127,27 @@ class Attachment implements ArrayAccess, JsonSerializable
      */
     protected $actions = [];
 
-    public function __construct(array $attributes = [])
+    public function attachField($field)
     {
-        foreach ($attributes as $key => $value) {
-            $this->$key = $value;
-        }
-    }
+        if ($field instanceof AttachmentField || is_array($field)) {
+            $this->fields[] = is_array($field) ? new AttachmentField($field) : $field;
 
-    public function __set($key, $value)
-    {
-        $this[$key] = $value;
-    }
-
-    public function offsetExists($offset)
-    {
-        return property_exists($this, $offset) && !is_object($this->$offset);
-    }
-
-    public function offsetGet($offset)
-    {
-        $offset = Str::camel($offset);
-
-        return $this->$offset;
-    }
-
-    public function offsetSet($offset, $value)
-    {
-        if (is_object($this->$offset)) {
-            throw new InvalidArgumentException("Unable to set offset '{$offset}'");
+            return $this;
         }
 
-        if ($offset === 'icon') {
-            return $this->setIcon($value);
+        throw new InvalidArgumentException('Please supply an array of properties or an instance of '.AttachmentField::class);
+    }
+
+    public function setFields($fields)
+    {
+        if (!isset($fields[0])) {
+            throw new InvalidArgumentException("Fields must be an array");
         }
 
-        $this->$offset = $value;
-    }
-
-    public function offsetUnset($offset)
-    {
-        $this->$offset = '';
-    }
-
-    public function jsonSerialize()
-    {
-        return $this->toArray();
-    }
-
-    public function toArray()
-    {
-        $array = [];
-        foreach (get_class_vars(static::class) as $key => $default) {
-            if (!is_object($this[$key])) {
-                $array[Str::snake($key)] = $this[$key];
-            }
+        foreach ($fields as $field) {
+            $this->attachField($field);
         }
 
-        return array_filter($array);
-    }
-
-    public function toJson(int $options = 0)
-    {
-        return json_encode($this->jsonSerialize(), $options);
+        return $this;
     }
 }

@@ -9,17 +9,18 @@ class ClientFunctionalTest extends TestCase
     {
         $data = [
             'username' => $this->faker->firstName,
-            'channel' => "@{$this->faker->firstName}",
-            'text' => $this->faker->paragraph(1),
+            // 'channel' => "@{$this->faker->firstName}",
+            'channel' => '@timfeid',
+            'text' => $this->faker->sentence,
             'icon' => ":{$this->faker->word}:",
             'attachments' => [
                 [
-                    'fallback' => $this->faker->paragraph(1),
-                    'color' => 'red',
+                    'fallback' => $this->faker->sentence,
+                    'color' => $this->faker->hexColor,
                     'fields' => [
                         [
-                            'title' => 'TEST',
-                            'value' => 'OmG',
+                            'title' => $this->faker->sentence,
+                            'value' => $this->faker->sentence,
                         ],
                     ],
                 ]
@@ -28,9 +29,9 @@ class ClientFunctionalTest extends TestCase
 
         $expectedPayload = $data;
         $expectedPayload['icon_emoji'] = $data['icon'];
-        unset($expectedPayload['icon']);
 
         $client = new Client($this->faker->url);
+
         $message = $client->createMessage($data);
         $this->assertInstanceOf(Message::class, $message);
 

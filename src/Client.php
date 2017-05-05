@@ -10,10 +10,11 @@ class Client
     protected $endpoint;
     protected $guzzleClient;
 
-    public function __construct($endpoint)
+    public function __construct($endpoint, $defaultParamters = [])
     {
         $this->endpoint = $endpoint;
         $this->guzzleClient = new GuzzleClient();
+        $this->defaultParamters = $defaultParamters;
     }
 
     public function setDefaultParameters($parameters)

@@ -12,6 +12,12 @@ class Message implements ArrayAccess, JsonSerializable
      * @var TimFeid\Slack\Client The slack client
      */
     protected $client;
+
+    /**
+     * @var GuzzleHttp\Psr7\Response The latest response
+     */
+    protected $response;
+
     /**
      * @var string Channel, private group, or IM channel to send message to
      */
@@ -28,7 +34,7 @@ class Message implements ArrayAccess, JsonSerializable
     protected $parse;
 
     /**
-     * @var boolean Find and link channel names and usernames
+     * @var bool Find and link channel names and usernames
      */
     protected $linkNames;
 
@@ -43,12 +49,12 @@ class Message implements ArrayAccess, JsonSerializable
     protected $username;
 
     /**
-     * @var boolean Pass true to enable unfurling of primarily text-based content
+     * @var bool Pass true to enable unfurling of primarily text-based content
      */
     protected $unfurlLinks;
 
     /**
-     * @var boolean Pass false to disable unfurling of media content
+     * @var bool Pass false to disable unfurling of media content
      */
     protected $unfurlMedia;
 
@@ -58,13 +64,23 @@ class Message implements ArrayAccess, JsonSerializable
     protected $icon;
 
     /**
+     * @var string URL to use as the icon
+     */
+    protected $iconUrl;
+
+    /**
+     * @var string Emoji string to use as the icon
+     */
+    protected $iconEmoji;
+
+    /**
      * @var float Provide another message's ts value to make this message a reply
      */
     protected $threadTs;
 
     /**
-     * @var boolean Used in conjunction with thread_ts and indicates whether reply
-     * should be made visible to everyone in the channel or conversation
+     * @var bool Used in conjunction with thread_ts and indicates whether reply
+     *           should be made visible to everyone in the channel or conversation
      */
     protected $replyBroadcast;
 
@@ -73,28 +89,26 @@ class Message implements ArrayAccess, JsonSerializable
         $this->client = $client;
 
         foreach ($defaults as $key => $value) {
-            $this->$key = $value;
+            $this[$key] = $value;
         }
     }
 
     /**
-     * Set the channel to send to
+     * Set the channel to send to.
      *
-     * @param string $channel  The channel to send to
+     * @param string $channel The channel to send to
      *
      * @return TimFeid\Slack\Message
      */
     public function to($channel)
     {
-        $this->channel = $channel;
-
-        return $this;
+        return $this->setChannel($channel);
     }
 
     /**
-     * Set the channel to send to
+     * Set the channel to send to.
      *
-     * @param string $channel  The channel to send to
+     * @param string $channel The channel to send to
      *
      * @return TimFeid\Slack\Message
      */
@@ -106,7 +120,7 @@ class Message implements ArrayAccess, JsonSerializable
     }
 
     /**
-     * Get the channel
+     * Get the channel.
      *
      * @return string
      */
@@ -116,7 +130,7 @@ class Message implements ArrayAccess, JsonSerializable
     }
 
     /**
-     * Set the user to send from
+     * Set the user to send from.
      *
      * @param string $username The username to send as
      *
@@ -124,13 +138,11 @@ class Message implements ArrayAccess, JsonSerializable
      */
     public function from($username)
     {
-        $this->username = $username;
-
-        return $this;
+        return $this->setUsername($username);
     }
 
     /**
-     * Set the username to send from
+     * Set the username to send from.
      *
      * @param string $username The username to send as
      *
@@ -144,7 +156,7 @@ class Message implements ArrayAccess, JsonSerializable
     }
 
     /**
-     * Get the username
+     * Get the username.
      *
      * @return string
      */
@@ -154,7 +166,7 @@ class Message implements ArrayAccess, JsonSerializable
     }
 
     /**
-     * Set the text to send
+     * Set the text to send.
      *
      * @param string $text The text to send
      *
@@ -168,7 +180,7 @@ class Message implements ArrayAccess, JsonSerializable
     }
 
     /**
-     * Get the text to send
+     * Get the text to send.
      *
      * @return string
      */
@@ -178,7 +190,7 @@ class Message implements ArrayAccess, JsonSerializable
     }
 
     /**
-     * Send the message to Slack
+     * Send the message to Slack.
      *
      * @param string $text The text to send
      *
@@ -190,11 +202,84 @@ class Message implements ArrayAccess, JsonSerializable
             $this->withText($text);
         }
 
-        $this->client->send($this);
+        $this->response = $this->client->sendMessage($this);
+
+        return $this;
+    }
+
+    /**
+     * Send message with this icon.
+     *
+     * @param string Icon url or emoji
+     *
+     * return TimFeid\Slack\Message
+     */
+    public function withIcon($icon)
+    {
+        return $this->setIcon($icon);
+    }
+
+    /**
+     * Send message with this icon.
+     *
+     * @param string Icon url or emoji
+     *
+     * return TimFeid\Slack\Message
+     */
+    public function setIcon($icon)
+    {
+        $this->icon = $icon;
+
+        $type = mb_substr($icon, 0, 1) === ':' && mb_substr($icon, -1) === ':'
+            ? 'iconEmoji'
+            : 'iconUrl';
+
+        $this->$type = $icon;
+
+        return $this;
+    }
+
+    public function getIcon()
+    {
+        return $this->icon;
+    }
+
+    public function attach($attachment)
+    {
+        if ($attachment instanceof Attachment || is_array($attachment)) {
+            $this->attachments[] = is_array($attachment) ? new Attachment($attachment) : $attachment;
+
+            return $this;
+        }
+
+        throw new InvalidArgumentException('Please supply an array of properties or an instance of '.Attachment::class);
+    }
+
+    public function setAttachments(array $attachments)
+    {
+        if (!isset($attachments[0])) {
+            throw new InvalidArgumentException("Attachments must be an array");
+        }
+
+        $this->attachments = $attachments;
+
+        return $this;
+    }
+
+    public function getAttachments()
+    {
+        return $this->attachments;
+    }
+
+    public function getResponse()
+    {
+        return $this->response;
     }
 
     public function __set($key, $value)
     {
+        $key = Str::camel($key);
+
         if (!property_exists($this, $key)) {
             throw new InvalidArgumentException("Unable to find key '{$key}'");
         }
@@ -209,6 +294,8 @@ class Message implements ArrayAccess, JsonSerializable
 
     public function offsetGet($offset)
     {
+        $offset = Str::camel($offset);
+
         return $this->$offset;
     }
 
@@ -216,6 +303,14 @@ class Message implements ArrayAccess, JsonSerializable
     {
         if (is_object($this->$offset)) {
             throw new InvalidArgumentException("Unable to set offset '{$offset}'");
+        }
+
+        if ($offset === 'icon') {
+            return $this->setIcon($value);
+        }
+
+        if ($offset === 'attachments') {
+            $this->setAttachments($value);
         }
 
         $this->$offset = $value;
@@ -235,16 +330,30 @@ class Message implements ArrayAccess, JsonSerializable
     {
         $array = [];
         foreach (get_class_vars(static::class) as $key => $default) {
-            if (!is_object($this[$key])) {
-                $array[$key] = $this[$key];
+            if (!is_object($this[$key]) && $key !== 'icon') {
+                $array[Str::snake($key)] = $this->convertAllArrays($this[$key]);
             }
         }
 
         return array_filter($array);
     }
 
-    public function toJson($options = [])
+    public function toJson(int $options = 0)
     {
         return json_encode($this->jsonSerialize(), $options);
+    }
+
+    protected function convertAllArrays($from)
+    {
+        if (is_array($from)) {
+            foreach ($from as $key => $value) {
+                // TODO: Make contract to make sure it has toArray method
+                if ($value instanceof ArrayAccess) {
+                    $from[$key] = $value->toArray();
+                }
+            }
+        }
+
+        return $from;
     }
 }

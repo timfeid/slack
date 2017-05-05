@@ -55,6 +55,40 @@ class MessageUnitTest extends TestCase
         $this->assertEquals($message['username'], $message->getUsername());
     }
 
+    public function testSetIconUrl()
+    {
+        $message = $this->createMessage();
+        $icon = $this->faker->url;
+
+        $this->assertInstanceOf(Message::class, $message->setIcon($icon));
+        $this->assertEquals($icon, $message->getIcon());
+        $this->assertEquals($message['icon_url'], $message->getIcon());
+        $this->assertNull($message['icon_emoji']);
+    }
+
+    public function testSetIconEmoji()
+    {
+        $message = $this->createMessage();
+        $icon = ":{$this->faker->firstName}:";
+
+        $this->assertInstanceOf(Message::class, $message->setIcon($icon));
+        $this->assertEquals($icon, $message->getIcon());
+        $this->assertEquals($message['icon_emoji'], $message->getIcon());
+        $this->assertNull($message['icon_url']);
+    }
+
+    public function testAttachment()
+    {
+        $attachment = [
+            'text' => $this->faker->paragraph(1),
+        ];
+
+        $message = $this->createMessage();
+        $message->attach($attachment);
+
+        $this->assertEquals($attachment, $message->getAttachments()[0]->toArray());
+    }
+
     protected function createMessage()
     {
         return new Message(Mockery::mock(Client::class));

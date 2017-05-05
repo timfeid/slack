@@ -2,9 +2,19 @@
 
 namespace TimFeid\Slack;
 
+use GuzzleHttp\Client as GuzzleClient;
+
 class Client
 {
     protected $defaultParamters = [];
+    protected $endpoint;
+    protected $guzzleClient;
+
+    public function __construct($endpoint)
+    {
+        $this->endpoint = $endpoint;
+        $this->guzzleClient = new GuzzleClient();
+    }
 
     public function setDefaultParameters($parameters)
     {
@@ -19,9 +29,21 @@ class Client
         return new Message($this, $parameters);
     }
 
-    public function getPayload(Message $message)
+    public function getMessageArray(Message $message)
     {
         return $message->toArray();
+    }
+
+    public function getMessagePayload(Message $message)
+    {
+        return $message->toJson(JSON_UNESCAPED_UNICODE);
+    }
+
+    public function sendMessage(Message $message)
+    {
+        $payload = $this->getMessagePayload($message);
+
+        return $this->guzzleClient->post($this->endpoint, ['body' => $payload]);
     }
 
     public function __call($method, $parameters)

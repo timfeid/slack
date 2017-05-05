@@ -166,11 +166,35 @@ class Message extends Payloadable
      *
      * @return TimFeid\Slack\Message
      */
-    public function withText($text)
+    public function setText($text)
     {
         $this->text = $text;
 
         return $this;
+    }
+
+    /**
+     * Set the text to send.
+     *
+     * @param string $text The text to send
+     *
+     * @return TimFeid\Slack\Message
+     */
+    public function withText($text)
+    {
+        return $this->setText($text);
+    }
+
+    /**
+     * Set the text to send.
+     *
+     * @param string $text The text to send
+     *
+     * @return TimFeid\Slack\Message
+     */
+    public function write($text)
+    {
+        return $this->setText($text);
     }
 
     /**

@@ -13,6 +13,7 @@ class ClientFunctionalTest extends TestCase
             'channel' => '@timfeid',
             'text' => $this->faker->sentence,
             'icon' => ":{$this->faker->word}:",
+            'unfurl_links' => true,
             'attachments' => [
                 [
                     'fallback' => $this->faker->sentence,

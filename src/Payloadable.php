@@ -34,13 +34,22 @@ abstract class Payloadable implements ArrayAccess, JsonSerializable
 
     public function offsetSet($offset, $value)
     {
-        $method = 'set'.ucfirst(Str::camel($offset));
+        $camel = Str::camel($offset);
+        $method = 'set'.ucfirst($camel);
         if (method_exists($this, $method)) {
             return $this->$method($value);
         }
 
+        if (!property_exists($this, $offset)) {
+            $offset = $camel;
+        }
+
+        if (!property_exists($this, $offset)) {
+            throw new InvalidArgumentException("Unknown parameter '{$offset}'");
+        }
+
         if (is_object($this->$offset)) {
-            throw new InvalidArgumentException("Unable to set offset '{$offset}'");
+            throw new InvalidArgumentException("Unable to set parameter '{$offset}'");
         }
 
         return $this->$offset = $value;

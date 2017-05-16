@@ -120,6 +120,13 @@ class Attachment extends Payloadable
     protected $markdownFields = [];
 
     /**
+     * Override the markdownFields property with all available ones
+     *
+     * @var boolean
+     */
+    protected $fullMarkdown = true;
+
+    /**
      * A collection of actions (buttons) to include in the attachment.
      * A maximum of 5 actions may be provided.
      *
@@ -150,4 +157,36 @@ class Attachment extends Payloadable
 
         return $this;
     }
+
+    public function enableMarkdown()
+    {
+        $this->fullMarkdown = true;
+
+        return $this;
+    }
+
+    public function withMarkdown()
+    {
+        return $this->enableMarkdown();
+    }
+
+    public function disableMarkdown()
+    {
+        $this->fullMarkdown = false;
+
+        return $this;
+    }
+
+    public function withoutMarkdown()
+    {
+        return $this->disableMarkdown();
+    }
+
+    public function payloadExtras()
+    {
+        return ['mrkdwn_in' => $this->fullMarkdown && empty($this->fullMarkdown) ? [
+            'text', 'title', 'pretext', 'footer',
+        ] : $this->markdownFields];
+    }
+
 }

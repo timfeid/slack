@@ -74,12 +74,16 @@ abstract class Payloadable implements ArrayAccess, JsonSerializable
                 if (is_array($this[$key])) {
                     $array[$field] = [];
                     foreach ($this[$key] as $subProperty) {
-                        $array[$field][] = $subProperty->toArray();
+                        $array[$field][] = !is_string($subProperty) ? $subProperty->toArray() : $subProperty;
                     }
                 } else {
                     $array[$field] = $this[$key];
                 }
             }
+        }
+
+        if (method_exists($this, 'payloadExtras')) {
+            $array = array_merge($array, $this->payloadExtras());
         }
 
         return array_filter($array);

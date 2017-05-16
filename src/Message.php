@@ -80,6 +80,8 @@ class Message extends Payloadable
      */
     protected $replyBroadcast;
 
+    protected $allowMarkdown = true;
+
     public function __construct(Client $client, $defaults = [])
     {
         $this->client = $client;
@@ -262,6 +264,30 @@ class Message extends Payloadable
         return $this->icon;
     }
 
+    public function disableMarkdown()
+    {
+        $this->allowMarkdown = false;
+
+        return $this;
+    }
+
+    public function withoutMarkdown()
+    {
+        return $this->disableMarkdown();
+    }
+
+    public function enableMarkdown()
+    {
+        $this->allowMarkdown = true;
+
+        return $this;
+    }
+
+    public function withMarkdown()
+    {
+        return $this->enableMarkdown();
+    }
+
     public function attach($attachment)
     {
         if ($attachment instanceof Attachment || is_array($attachment)) {
@@ -294,5 +320,10 @@ class Message extends Payloadable
     public function getResponse()
     {
         return $this->response;
+    }
+
+    public function payloadExtras()
+    {
+        return ['mrkdwn' => $this->allowMarkdown];
     }
 }

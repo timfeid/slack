@@ -184,7 +184,7 @@ class Attachment extends Payloadable
 
     public function payloadExtras()
     {
-        return ['mrkdwn_in' => $this->fullMarkdown && empty($this->fullMarkdown) ? [
+        return ['mrkdwn_in' => $this->fullMarkdown && empty($this->markdownFields) ? [
             'text', 'title', 'pretext', 'footer',
         ] : $this->markdownFields];
     }
